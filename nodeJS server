@@ -1,0 +1,136 @@
+// Amazon aws EC2 인스턴스를 사용해 NodeJS 웹 서버를 구축하고, MYSQL과 연동.
+// 참고 1 : https://cinema4dr12.tistory.com/741 (인스턴스 생성 과정과 NodeJS 설치)
+// 참고 2 : https://victorydntmd.tistory.com/25 (MYSQL 연동)
+
+// Ubuntu Server 18.04 LTS (HVM), SSD Volume Type 인스턴스 생성은 참고 1의 글을 참조 바랍니다.
+// PuTTy와 Filezila를 사용하였으므로, 생성된 페어키는 PuTTygen을 통해 변환하여 ubuntu server에 접속하였습니다.
+// 파일 변환 참고 3 : https://macmini.tistory.com/7
+// .pem 파일의 페어키를 Filezilla를 통해 ubuntu 디렉토리로 복사한 후 접속하였습니다.
+
+Login as: ubuntu
+
+$ ls -al
+// 페어키 파일 확인
+
+$ ssh -i [Key pair filename] ubuntu@[Public DNS]
+// 보안을 경고하는 내용이 뜰 수 있습니다. 그래도 진행하였습니다.
+
+$ sudo passwd
+// root 관리자 password 설정
+
+$ su -
+// root 관리자로 로그인
+
+$ sudo nano /etc/ssh/sshd_config
+// ssh 환경 설정 파일 수정
+// 내용 중 #PermitRootLogin @@@, #StrictModes @@@를
+// PermitRootLogin yes 로 주석 제거하고,
+// #StrictModes yes 로 안 되어있다면 수정, 맞게 되어있다면 수정하지 않으셔도 됩니다.
+// + 참고 : nano 명령어로 파일을 저장할 때엔 ctrl+O 다음 enter, 닫으실 땐 ctrl+X 하시면 됩니다.
+
+$ sudo service ssh restart
+// 재시작
+
+$ apt update
+$ apt upgrade
+// 시스템 업데이트
+
+$ dpkg-reconfigure tzdata
+// 시스템 시간 설정으로 Asia-Seoul 선택해주시면 됩니다. 시간 확인은 $ date
+
+$ apt-cache search mysql-server
+// 설치 가능한 mysql 버전 확인
+
+$ apt install mysql-server-5.7
+// 5.7버전 설치
+// 중간에 질문이 나오면 y 선택
+
+$ mysql -u root -p
+// mysql을 root 계정으로 접속
+
+$ exit
+// 나가기
+
+$ nano etc/mysql/conf.d/mysql.cnf
+// 한글 오류를 없애기 위해 아래 설정 입력 후 저장
+
+[mysqld]
+ datadir=/var/lib/mysql
+ socket=/var/lib/mysql/mysql.sock
+ user=mysql
+ character-set-server=utf8
+ collation-server=utf8_general_ci
+ init_connect = set collation_connection = utf8_general_ci
+ init_connect = set names utf8
+ 
+ [mysql]
+ default-character-set=utf8
+ 
+ [mysqld_safe]
+ log-error=/var/log/mysqld.log
+ pid-file=/var/run/mysqld/mysqld.pid
+ default-character-set=utf8
+ 
+ [client]
+ default-character-set=utf8
+ 
+ [mysqldump]
+ default-character-set=utf8
+
+$ etc/init.d/mysql restart
+// 재시작
+
+$ apt install nodejs
+// nodejs 설치
+
+$ apt install npm
+// npm 설치
+
+$ npm install -g express
+// express 설치
+
+$ npm install -g express-generator@4
+// express generator 4.x 설치
+
+$ npm install -g nodemon
+// nodemon 설치
+
+$ mkdir node-proect && cd node-project && mkdir test1 && cd test1
+// test directory 생성
+
+$ express -e
+// express 기본 template 생성
+
+$ ls -al
+// 설치 확인
+
+$ npm install
+// node package 설치
+
+$ nano app.js
+// app.js 파일 편집(참고 1을 보시면 더 편합니다.)
+// // view engine setup 항목 아래에 아래 항목을 추가해주십시오.
+
+ // port setup
+ app.set('port', process.env.PORT || 9000);
+ 
+// 그리고 맨 아래 module.exports = app; 위에 아래를 추가해주십시오.
+
+  //////////////////////////////////////////////////////
+// ------- creates Server -------
+module.exports = app;
+
+var server = app.listen(app.get('port'), function() {
+console.log('Express server listening on port ' + server.address().port);
+});
+
+// app.js를 저장합니다.
+
+$ nano package.json
+// package.json 파일에 start 항목을 "nodemon app.js"로 수정합니다.
+
+$ npm start
+// server를 실행합니다.
+// 브라우저에 public DNS와 port 번호를 입력하여 확인합니다.
+
+
